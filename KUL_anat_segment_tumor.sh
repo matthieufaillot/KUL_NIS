@@ -289,19 +289,40 @@ function KUL_fast {
 
 function KUL_fastsurfer {
 
-    if [ ! -f $fastsurferoutputdir/$participant/mri/aparc.DKTatlas+aseg.deep.mgz ]; then
-        kul_echo "Running segmentation-only fastsufer"
-        eval "$(conda shell.bash hook)"
-        conda activate fastsurfer_gpu
-        task_in="$FASTSURFER_HOME/run_fastsurfer.sh \
-            --sid $participant --sd $fastsurferoutputdir \
-            --t1 $cwd/$T1w \
-            --seg_only --py python --ignore_fs_version"
-        KUL_task_exec $verbose_level "Running FastSurfer" "Fastsurfer"
-        conda deactivate
-    else
+#    if [ ! -f $fastsurferoutputdir/$participant/mri/aparc.DKTatlas+aseg.deep.mgz ]; then
+#        kul_echo "Running segmentation-only fastsufer"
+#        eval "$(conda shell.bash hook)"
+#        conda activate fastsurfer_gpu
+#        task_in="$FASTSURFER_HOME/run_fastsurfer.sh \
+#            --sid $participant --sd $fastsurferoutputdir \
+#            --t1 $cwd/$T1w \
+#            --seg_only --py python --ignore_fs_version"
+#        KUL_task_exec $verbose_level "Running FastSurfer" "Fastsurfer"
+#        conda deactivate
+#    else
+#        kul_echo "Already run Fastsurfer"
+#    fi
+
+if [ ! -f $fastsurferoutputdir/$participant/mri/aparc.DKTatlas+aseg.deep.mgz ]; then
+  kul_echo "Running segmentation-only fastsurfer"
+  mkdir $fastsurferoutputdir
+  singularity exec --nv\
+  -B $bidsdir:/data \
+  -B $fastsurferoutputdir:/output \
+  -B $KUL_apps_DIR/freesurfer_license:/fs_license \
+  -B $FASTSURFER_HOME \
+  $KUL_apps_DIR/fastsurfer-gpu.sif \
+  $FASTSURFER_HOME/run_fastsurfer.sh \
+  --t1 $cwd/$T1w \
+  --sd $fastsurferoutputdir \
+  --sid $participant \
+  --seg_only --py python --ignore_fs_version
+  #KUL_task_exec $verbose_level "Running FastSurfer" "Fastsurfer"
+
+else
         kul_echo "Already run Fastsurfer"
-    fi
+fi
+
 }
 
 # --- MAIN ---
@@ -394,7 +415,7 @@ if [ $result -eq 0 ]; then
         kul_echo "hd-glio-auto found $hdglio_output1"
         #echo $hdglio_type_found
         cmd="mrcalc $hdglio_segmentation 1 -eq - | maskfilter - dilate -npass 10 -nthreads $ncpu - | \
-        maskfilter - fill - -nthreads $ncpu | \
+        maskfilter - fill -nthreads $ncpu | \
         maskfilter - erode ${hdglio_output1} -npass 10 -nthreads $ncpu -force"
         #echo $cmd
         eval $cmd 

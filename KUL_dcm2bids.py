@@ -119,7 +119,7 @@ if not os.path.exists(dcm_dir):
     exit(1)
 
 #nii_dir = os.path.join('BIDS/sub-' + participant, 'dwi')
-nii_dir = '.'
+nii_dir = ''
 if not os.path.exists(nii_dir):
    os.makedirs(nii_dir)
 
